@@ -1,0 +1,738 @@
+<!--
+  ═══════════════════════════════════════════════════════════════
+   HANSI ZOË AI GOGGLES — Companion v4.0 (Phase 5)
+   Babel Mode: Full translation (OCR + voice + multi-lang)
+   RAG Memory: In-browser vector store for persistent context
+  ═══════════════════════════════════════════════════════════════
+
+   Phase 5 adds:
+   1. Enhanced Babel: detect → translate text/speech in 12+ languages
+   2. RAG Memory System:
+      - Stores every AI interaction as an embedding
+      - Cosine similarity search for relevant context
+      - Augments Titan prompts with past observations
+      - "What did I see earlier?" queries
+      - IndexedDB persistence across sessions
+   3. Memory-aware Titan conversations
+   4. Survey mode: auto-log observations with timestamps + location
+
+   Architecture:
+     User query → Embed query → Search memory (top-k) →
+     Inject context → LLM → Response → Store in memory
+  ═══════════════════════════════════════════════════════════════
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hansi v4.0 — Babel + Memory</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--card:rgba(255,255,255,0.03);--border:#1a1a2e;--text:#e0e0e0;--dim:#555;--accent:#e94560;--scout:#00b4d8;--babel:#06d6a0;--titan:#ffd166;--survey:#ef476f;--combat:#9b5de5}
+body{font-family:'JetBrains Mono','Fira Code',monospace;background:var(--bg);color:var(--text);padding:10px;max-width:600px;margin:0 auto;font-size:10px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:6px}
+.title{text-align:center;font-size:16px;font-weight:800;background:linear-gradient(135deg,#e94560,#533483,#0f3460);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{text-align:center;color:var(--dim);font-size:8px;margin-bottom:10px}
+.row{display:flex;gap:4px;flex-wrap:wrap}
+button{font-family:inherit;padding:5px 10px;border-radius:6px;border:1px solid #222;background:rgba(255,255,255,0.04);color:#888;cursor:pointer;font-size:9px;transition:all .15s}
+button.active{border-color:var(--accent);background:rgba(233,69,96,0.1);color:var(--accent)}
+button.recording{border-color:#ef476f;background:rgba(239,71,111,0.2);color:#ef476f;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+input,select,textarea{font-family:inherit;background:rgba(0,0,0,.4);border:1px solid #333;border-radius:6px;padding:5px 8px;color:var(--text);font-size:9px;width:100%}
+textarea{resize:vertical;min-height:40px}
+.label{font-size:8px;color:var(--dim);margin-bottom:3px}
+.stat{background:rgba(0,0,0,.4);border-radius:6px;padding:5px 8px;text-align:center;flex:1;min-width:48px}
+.sv{font-size:12px;font-weight:700;color:var(--scout)}.sl{font-size:7px;color:var(--dim);text-transform:uppercase}
+.img-box{border-radius:8px;border:1px solid var(--border);background:#000;overflow:hidden;position:relative}
+.img-box img{width:100%;display:block}
+.ai-r{border-radius:6px;padding:8px;margin-top:5px;font-size:9px;line-height:1.5;white-space:pre-wrap;max-height:160px;overflow-y:auto}
+.log{background:rgba(0,0,0,.5);border-radius:6px;padding:6px;max-height:80px;overflow-y:auto;font-size:7px;line-height:1.8}
+.log .i{color:var(--scout)}.log .e{color:var(--accent)}.log .o{color:var(--babel)}
+.mem-item{background:rgba(0,0,0,.3);border:1px solid #1a1a2e;border-radius:6px;padding:6px;margin-bottom:4px;font-size:8px}
+.mem-item .mem-time{color:var(--dim);font-size:7px}.mem-item .mem-mode{font-size:7px;padding:1px 4px;border-radius:8px;margin-left:4px}
+.chat-b{border-radius:6px;padding:6px 10px;margin-bottom:3px;font-size:9px;max-width:85%}
+.chat-u{background:rgba(0,180,216,.1);border:1px solid rgba(0,180,216,.2);margin-left:auto}
+.chat-a{background:rgba(233,69,96,.08);border:1px solid rgba(233,69,96,.15)}
+.tabs{display:flex;gap:3px;margin-bottom:6px}
+.tabs button{flex:1;text-align:center;font-size:8px;padding:6px 4px}
+.voice-viz{height:30px;background:rgba(0,0,0,.4);border-radius:6px;overflow:hidden;position:relative;margin:4px 0}
+.voice-bar{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(0deg,#e94560,#ffd166);transition:height .1s}
+.voice-st{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:8px;color:#fff;text-shadow:0 0 4px rgba(0,0,0,.8)}
+</style>
+</head>
+<body>
+
+<h1 class="title">⚡ HANSI ZOË AI GOGGLES</h1>
+<p class="sub">v4.0 — Phase 5: Babel Translation + RAG Memory</p>
+
+<!-- Connection + Stats -->
+<div class="card" style="display:flex;align-items:center;justify-content:space-between">
+  <div style="display:flex;align-items:center;gap:6px">
+    <span id="dot" style="width:7px;height:7px;border-radius:50%;background:#e94560"></span>
+    <span id="cL" style="font-size:9px;color:#888">Disconnected</span>
+  </div>
+  <div class="row"><button onclick="bleConnect()">🔗 BLE</button><button onclick="toggleDemo()" id="bD">📷 Demo</button></div>
+</div>
+
+<div class="row" style="margin-bottom:6px" id="sR" hidden>
+  <div class="stat"><div class="sl">Battery</div><div class="sv" id="sBa">-</div></div>
+  <div class="stat"><div class="sl">Mode</div><div class="sv" id="sMo">IDLE</div></div>
+  <div class="stat"><div class="sl">Memory</div><div class="sv" id="sMem">0</div></div>
+  <div class="stat"><div class="sl">Images</div><div class="sv" id="sIm">0</div></div>
+</div>
+
+<!-- Mode -->
+<div class="card">
+  <div class="row">
+    <button onclick="setMode(0)">💤 Idle</button>
+    <button onclick="setMode(1)">🔍 Scout</button>
+    <button onclick="setMode(2)" id="bBa">🌍 Babel</button>
+    <button onclick="setMode(3)">🧠 Titan</button>
+    <button onclick="setMode(4)">📸 Survey</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs" id="tabs">
+  <button class="active" onclick="showTab('live',this)">📡 Live</button>
+  <button onclick="showTab('babel',this)">🌍 Babel</button>
+  <button onclick="showTab('titan',this)">🧠 Titan</button>
+  <button onclick="showTab('memory',this)">🧬 Memory</button>
+  <button onclick="showTab('config',this)">⚙️</button>
+</div>
+
+<!-- ════ LIVE TAB ════ -->
+<div id="tab-live">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+      <span class="label" style="margin:0">📷 Camera</span>
+      <div class="row"><button id="bAu" class="active" onclick="toggleAuto()">🟢 Auto</button><button onclick="analyze()">🔮</button></div>
+    </div>
+    <div class="img-box"><img id="prev" src="" style="display:none"><div id="ph" style="padding:20px;text-align:center;color:#333">Waiting...</div></div>
+    <div id="aiR" class="ai-r" style="display:none"></div>
+  </div>
+  <!-- Voice -->
+  <div class="card">
+    <div class="label">🎤 Voice</div>
+    <div class="voice-viz"><div class="voice-bar" id="vBar"></div><div class="voice-st" id="vSt">Ready</div></div>
+    <div class="row"><button id="bMic" onclick="toggleMic()">🎤 Phone Mic</button><button onclick="testTTS()">🔊 Test TTS</button></div>
+  </div>
+</div>
+
+<!-- ════ BABEL TAB ════ -->
+<div id="tab-babel" hidden>
+  <div class="card">
+    <div class="label">🌍 Babel Translation Engine</div>
+    <div style="margin:6px 0">
+      <div class="label">Source Language</div>
+      <div class="row" style="margin-bottom:6px">
+        <button class="active" onclick="setBSrc('auto',this)">🔍 Auto</button>
+        <button onclick="setBSrc('en',this)">🇬🇧 EN</button>
+        <button onclick="setBSrc('de',this)">🇩🇪 DE</button>
+        <button onclick="setBSrc('fr',this)">🇫🇷 FR</button>
+        <button onclick="setBSrc('es',this)">🇪🇸 ES</button>
+        <button onclick="setBSrc('ja',this)">🇯🇵 JP</button>
+        <button onclick="setBSrc('zh',this)">🇨🇳 ZH</button>
+        <button onclick="setBSrc('ar',this)">🇸🇦 AR</button>
+      </div>
+      <div class="label">Target Language</div>
+      <div class="row">
+        <button class="active" onclick="setBTgt('en',this)">🇬🇧 EN</button>
+        <button onclick="setBTgt('de',this)">🇩🇪 DE</button>
+        <button onclick="setBTgt('fr',this)">🇫🇷 FR</button>
+        <button onclick="setBTgt('es',this)">🇪🇸 ES</button>
+        <button onclick="setBTgt('ja',this)">🇯🇵 JP</button>
+        <button onclick="setBTgt('zh',this)">🇨🇳 ZH</button>
+        <button onclick="setBTgt('ar',this)">🇸🇦 AR</button>
+      </div>
+    </div>
+    <div style="margin-top:6px">
+      <div class="label">Manual Text Input</div>
+      <textarea id="babelInput" placeholder="Paste text to translate..."></textarea>
+      <button onclick="translateManual()" style="margin-top:4px;width:100%">🌍 Translate</button>
+    </div>
+    <div id="babelResult" class="ai-r" style="display:none;background:rgba(6,214,160,.08);border:1px solid rgba(6,214,160,.2)"></div>
+  </div>
+  <div class="card">
+    <div class="label">📊 Translation History</div>
+    <div id="babelHistory" style="max-height:150px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ════ TITAN TAB ════ -->
+<div id="tab-titan" hidden>
+  <div class="card">
+    <div class="label">🧠 Titan — Memory-Augmented AI</div>
+    <div style="font-size:7px;color:var(--dim);margin-bottom:6px">Titan uses RAG to recall past observations and conversations.</div>
+    <div id="chatBox" style="display:flex;flex-direction:column;gap:3px;max-height:280px;overflow-y:auto;margin-bottom:6px"></div>
+    <div class="row">
+      <input id="chatIn" placeholder="Ask Hansi (memory-aware)..." style="flex:1" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()">Send</button>
+      <button onclick="clearChat()">🗑️</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MEMORY TAB ════ -->
+<div id="tab-memory" hidden>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="label" style="margin:0">🧬 RAG Memory Store</span>
+      <div class="row">
+        <button onclick="exportMemory()">📥 Export</button>
+        <button onclick="clearMemory()">🗑️ Clear All</button>
+      </div>
+    </div>
+    <div style="margin:6px 0">
+      <input id="memSearch" placeholder="Search memory..." oninput="searchMemory(this.value)">
+    </div>
+    <div style="font-size:7px;color:var(--dim);margin-bottom:4px">
+      <span id="memCount">0</span> memories stored • <span id="memSize">0</span> KB
+    </div>
+    <div id="memList" style="max-height:300px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ════ CONFIG TAB ════ -->
+<div id="tab-config" hidden>
+  <div class="card">
+    <div class="label">⚙️ Configuration</div>
+    <div style="margin:4px 0">
+      <div class="label">AI Provider</div>
+      <div class="row" style="margin-bottom:6px">
+        <button class="active" onclick="setProv('openai',this)">GPT-4o</button>
+        <button onclick="setProv('anthropic',this)">Claude</button>
+        <button onclick="setProv('groq',this)">Groq</button>
+      </div>
+      <div class="label">API Key</div>
+      <input type="password" id="apiKey" placeholder="sk-..." style="margin-bottom:6px">
+      <div class="label">TTS</div>
+      <div class="row" style="margin-bottom:6px">
+        <select id="ttsV" style="flex:1"><option value="web">Browser TTS</option><option value="openai">OpenAI TTS</option></select>
+        <select id="ttsL" style="flex:1"><option value="en-US">EN</option><option value="de-DE">DE</option><option value="fr-FR">FR</option><option value="ja-JP">JP</option><option value="es-ES">ES</option></select>
+      </div>
+      <div class="label">Memory Settings</div>
+      <div class="row">
+        <button class="active" onclick="toggleMemory(this)" id="bMem">🧬 Memory ON</button>
+        <button onclick="toggleAutoLog(this)" id="bLog">📝 Auto-Log ON</button>
+      </div>
+      <div style="font-size:7px;color:#333;margin-top:6px">
+        Embeddings: text-embedding-3-small (~$0.00002/1K tokens)<br>
+        Vision: GPT-4o-mini ~$0.0004/image | Whisper ~$0.006/min
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Log -->
+<div class="card">
+  <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span class="label" style="margin:0">📋</span><button onclick="$('logBox').innerHTML=''">Clear</button></div>
+  <div class="log" id="logBox"></div>
+</div>
+
+<script>
+// ═══ GLOBALS ══════════════════════════════════════════════════
+const $=id=>document.getElementById(id);
+let connected=false,demoMode=false,autoAnalyze=true,memoryOn=true,autoLog=true;
+let currentMode=0,imageCount=0,isAnalyzing=false,provider="openai";
+let lastBlob=null,bSrc="auto",bTgt="en",convCtx=[];
+let device,server,chars={},hudChars={};
+let imageBuffer=new Uint8Array(0),expectedSize=0,receivedChunks=0;
+
+const MODES=["IDLE","SCOUT","BABEL","TITAN","SURVEY","COMBAT"];
+const MCOL=["#555","#00b4d8","#06d6a0","#ffd166","#ef476f","#9b5de5"];
+const LANGS={auto:"Auto-detect",en:"English",de:"German",fr:"French",es:"Spanish",ja:"Japanese",zh:"Chinese",ar:"Arabic",ko:"Korean",pt:"Portuguese",ru:"Russian",it:"Italian"};
+
+function log(m,t="info"){const c=t==="error"?"e":t==="success"?"o":"i";$("logBox").innerHTML+=`<div class="${c}">[${new Date().toLocaleTimeString()}] ${m}</div>`;$("logBox").scrollTop=$("logBox").scrollHeight}
+
+// ═══ RAG MEMORY SYSTEM ═══════════════════════════════════════
+const memoryDB = {
+  entries: [], // {id, text, mode, timestamp, embedding, metadata}
+  
+  async init() {
+    // Load from IndexedDB
+    try {
+      const stored = localStorage.getItem("hansi_memory");
+      if (stored) {
+        this.entries = JSON.parse(stored);
+        log(`Memory loaded: ${this.entries.length} entries`, "success");
+      }
+    } catch(e) { log("Memory load failed", "error"); }
+    this.updateUI();
+  },
+
+  save() {
+    try {
+      localStorage.setItem("hansi_memory", JSON.stringify(this.entries));
+    } catch(e) {
+      // If too large, trim oldest entries
+      if (this.entries.length > 500) {
+        this.entries = this.entries.slice(-300);
+        localStorage.setItem("hansi_memory", JSON.stringify(this.entries));
+      }
+    }
+  },
+
+  async add(text, mode, metadata = {}) {
+    if (!memoryOn || !text || text.length < 5) return;
+    
+    const entry = {
+      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+      text: text.substring(0, 500),
+      mode: MODES[mode] || "UNKNOWN",
+      timestamp: new Date().toISOString(),
+      metadata: { ...metadata, mode },
+      embedding: null
+    };
+
+    // Get embedding if API key available
+    const key = $("apiKey").value;
+    if (key && provider === "openai") {
+      try {
+        entry.embedding = await this.getEmbedding(text.substring(0, 200), key);
+      } catch(e) { /* store without embedding */ }
+    }
+
+    this.entries.push(entry);
+    this.save();
+    this.updateUI();
+    log(`Memory +1: "${text.substring(0, 40)}..."`, "success");
+  },
+
+  async search(query, topK = 5) {
+    const key = $("apiKey").value;
+    
+    // If we have embeddings, use cosine similarity
+    if (key && provider === "openai") {
+      try {
+        const qEmb = await this.getEmbedding(query, key);
+        const scored = this.entries
+          .filter(e => e.embedding)
+          .map(e => ({ ...e, score: this.cosineSim(qEmb, e.embedding) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, topK);
+        return scored;
+      } catch(e) { /* fallback to keyword */ }
+    }
+
+    // Fallback: keyword search
+    const words = query.toLowerCase().split(/\s+/);
+    return this.entries
+      .map(e => ({
+        ...e,
+        score: words.filter(w => e.text.toLowerCase().includes(w)).length / words.length
+      }))
+      .filter(e => e.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK);
+  },
+
+  async getEmbedding(text, key) {
+    const res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: "text-embedding-3-small", input: text, dimensions: 256 })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.data[0].embedding;
+  },
+
+  cosineSim(a, b) {
+    if (!a || !b || a.length !== b.length) return 0;
+    let dot = 0, na = 0, nb = 0;
+    for (let i = 0; i < a.length; i++) { dot += a[i]*b[i]; na += a[i]*a[i]; nb += b[i]*b[i]; }
+    return dot / (Math.sqrt(na) * Math.sqrt(nb) + 1e-10);
+  },
+
+  getContextForPrompt(results) {
+    if (!results.length) return "";
+    return "\n\n[MEMORY CONTEXT - Previous observations]\n" +
+      results.map(r => `• [${r.mode} ${new Date(r.timestamp).toLocaleString()}] ${r.text}`).join("\n") +
+      "\n[END MEMORY]\n";
+  },
+
+  updateUI() {
+    $("sMem").textContent = this.entries.length;
+    $("memCount").textContent = this.entries.length;
+    const size = new Blob([JSON.stringify(this.entries)]).size / 1024;
+    $("memSize").textContent = size.toFixed(1);
+    this.renderList(this.entries.slice(-20).reverse());
+  },
+
+  renderList(items) {
+    $("memList").innerHTML = items.map(e => `
+      <div class="mem-item">
+        <span class="mem-time">${new Date(e.timestamp).toLocaleString()}</span>
+        <span class="mem-mode" style="background:${MCOL[e.metadata?.mode||0]}22;color:${MCOL[e.metadata?.mode||0]}">${e.mode}</span>
+        ${e.embedding ? "🧬" : "📝"}
+        <div style="margin-top:3px;color:#aaa">${e.text.substring(0, 100)}${e.text.length > 100 ? "..." : ""}</div>
+      </div>
+    `).join("");
+  },
+
+  clear() {
+    this.entries = [];
+    localStorage.removeItem("hansi_memory");
+    this.updateUI();
+    log("Memory cleared");
+  },
+
+  export() {
+    const blob = new Blob([JSON.stringify(this.entries, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `hansi_memory_${new Date().toISOString().split("T")[0]}.json`;
+    a.click();
+  }
+};
+
+// ═══ BABEL TRANSLATION ═══════════════════════════════════════
+const babel = {
+  history: [],
+
+  async translateImage(blob) {
+    const key = $("apiKey").value;
+    if (!key) return;
+    const b64 = await blobToB64(blob);
+
+    const srcLang = bSrc === "auto" ? "Detect the source language" : `Source is ${LANGS[bSrc]}`;
+    const tgtLang = LANGS[bTgt] || "English";
+
+    const prompt = `You are a translation assistant in smart goggles. ${srcLang}. Translate ALL visible text to ${tgtLang}.
+
+Format your response as:
+🔤 [Detected Language]
+📝 Original: [original text]
+🌍 ${tgtLang}: [translation]
+
+If multiple text blocks, translate each. If no text visible, say "No text detected".`;
+
+    try {
+      const result = await visionAPI(b64, prompt, key);
+      showBabelResult(result);
+      await memoryDB.add(`[Babel] ${result}`, 2, { type: "translation" });
+      relayHUD(result.substring(0, 200));
+      return result;
+    } catch(e) {
+      log(`Babel error: ${e.message}`, "error");
+    }
+  },
+
+  async translateText(text) {
+    const key = $("apiKey").value;
+    if (!key || !text) return;
+
+    const srcLang = bSrc === "auto" ? "Detect the source language" : `Source: ${LANGS[bSrc]}`;
+    const tgtLang = LANGS[bTgt] || "English";
+
+    const prompt = `Translate the following text. ${srcLang}. Target: ${tgtLang}.
+
+Text: "${text}"
+
+Format:
+🔤 [Source Language]
+📝 Original: ${text}
+🌍 ${tgtLang}: [translation]`;
+
+    try {
+      const result = await chatAPI([{ role: "user", content: prompt }], key, 300);
+      showBabelResult(result);
+      this.history.unshift({ src: text, result, time: new Date() });
+      await memoryDB.add(`[Babel] ${text} → ${result}`, 2, { type: "translation" });
+      relayHUD(result.substring(0, 200));
+      speakText(result.split("🌍")[1] || result);
+      return result;
+    } catch(e) {
+      log(`Translation error: ${e.message}`, "error");
+    }
+  },
+
+  async translateVoice(spokenText) {
+    return this.translateText(spokenText);
+  }
+};
+
+function showBabelResult(text) {
+  $("babelResult").style.display = "block";
+  $("babelResult").textContent = text;
+  showAIResult(text);
+  renderBabelHistory();
+}
+
+function renderBabelHistory() {
+  $("babelHistory").innerHTML = babel.history.slice(0, 10).map(h =>
+    `<div class="mem-item"><span class="mem-time">${h.time.toLocaleTimeString()}</span><div style="color:#aaa;margin-top:2px">${h.result.substring(0, 80)}...</div></div>`
+  ).join("");
+}
+
+// ═══ AI API HELPERS ══════════════════════════════════════════
+async function visionAPI(b64, prompt, key) {
+  if (provider === "openai") {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model: "gpt-4o-mini", max_tokens: 400, messages: [{ role: "user", content: [
+        { type: "text", text: prompt },
+        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${b64}`, detail: "low" } }
+      ]}]})
+    });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message);
+    return d.choices[0].message.content;
+  } else if (provider === "anthropic") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 400, messages: [{ role: "user", content: [
+        { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } },
+        { type: "text", text: prompt }
+      ]}]})
+    });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message);
+    return d.content[0].text;
+  }
+  return "[Vision requires OpenAI or Claude]";
+}
+
+async function chatAPI(messages, key, maxT = 250) {
+  const sys = { role: "system", content: `You are Hansi, an AI in smart goggles (Attack on Titan's Hange Zoë). Be concise (2-3 sentences for HUD). Time: ${new Date().toLocaleString()}.` };
+  
+  if (provider === "openai" || provider === "groq") {
+    const url = provider === "openai" ? "https://api.openai.com/v1/chat/completions" : "https://api.groq.com/openai/v1/chat/completions";
+    const model = provider === "openai" ? "gpt-4o-mini" : "llama-3.3-70b-versatile";
+    const res = await fetch(url, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: [sys, ...messages], max_tokens: maxT })
+    });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message);
+    return d.choices[0].message.content;
+  } else {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: maxT, system: sys.content, messages })
+    });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message);
+    return d.content[0].text;
+  }
+}
+
+// ═══ TITAN (Memory-Augmented) ════════════════════════════════
+async function sendChat() {
+  const t = $("chatIn").value.trim(); if (!t || !$("apiKey").value) return;
+  $("chatIn").value = "";
+  addBubble(t, true);
+  convCtx.push({ role: "user", content: t });
+
+  try {
+    // RAG: search memory for relevant context
+    let memCtx = "";
+    if (memoryOn) {
+      const results = await memoryDB.search(t, 5);
+      memCtx = memoryDB.getContextForPrompt(results);
+      if (results.length) log(`RAG: ${results.length} memories found (top: ${results[0].score.toFixed(2)})`);
+    }
+
+    // Build augmented prompt
+    const augmented = memCtx
+      ? [{ role: "system", content: `Use this context from past observations to answer if relevant:${memCtx}` }, ...convCtx.slice(-12)]
+      : convCtx.slice(-12);
+
+    const reply = await chatAPI(augmented, $("apiKey").value, 300);
+    convCtx.push({ role: "assistant", content: reply });
+    addBubble(reply, false);
+    showAIResult(reply);
+    relayHUD(reply);
+    await memoryDB.add(`Q: ${t}\nA: ${reply}`, 3, { type: "conversation" });
+    speakText(reply);
+    log("Titan replied", "success");
+  } catch(e) {
+    addBubble("Error: " + e.message, false);
+    log("Titan: " + e.message, "error");
+  }
+}
+
+function addBubble(t, isU) {
+  const d = document.createElement("div");
+  d.className = `chat-b ${isU ? "chat-u" : "chat-a"}`;
+  d.innerHTML = `<span style="font-size:7px;color:#555">${isU ? "You" : "🧠 Hansi"}</span><br>${t}`;
+  $("chatBox").appendChild(d);
+  $("chatBox").scrollTop = $("chatBox").scrollHeight;
+}
+function clearChat() { $("chatBox").innerHTML = ""; convCtx = []; }
+
+// ═══ IMAGE HANDLING ══════════════════════════════════════════
+function showImage(blob) {
+  lastBlob = blob;
+  $("prev").src = URL.createObjectURL(blob); $("prev").style.display = "block";
+  $("ph").style.display = "none";
+  imageCount++; $("sIm").textContent = imageCount;
+  if (autoAnalyze && $("apiKey").value) {
+    if (currentMode === 1) analyzeScout(blob);
+    else if (currentMode === 2) babel.translateImage(blob);
+    else if (currentMode === 4) autoLogSurvey(blob);
+  }
+}
+
+async function analyzeScout(blob) {
+  if (isAnalyzing) return; isAnalyzing = true;
+  try {
+    const b64 = await blobToB64(blob);
+    const result = await visionAPI(b64, "Identify all objects, text, and elements. Be concise (2-3 sentences).", $("apiKey").value);
+    showAIResult(result); relayHUD(result);
+    await memoryDB.add(result, 1, { type: "scout_observation" });
+    log("Scout done", "success");
+  } catch(e) { log("Scout: " + e.message, "error"); }
+  isAnalyzing = false;
+}
+
+async function autoLogSurvey(blob) {
+  if (isAnalyzing) return; isAnalyzing = true;
+  try {
+    const b64 = await blobToB64(blob);
+    const result = await visionAPI(b64, "Briefly describe this scene for a life log. Include notable objects, text, people's activities. 1-2 sentences.", $("apiKey").value);
+    await memoryDB.add(`[Survey ${new Date().toLocaleTimeString()}] ${result}`, 4, { type: "survey_log", auto: true });
+    showAIResult(`📸 ${result}`);
+    log("Survey logged", "success");
+  } catch(e) { log("Survey: " + e.message, "error"); }
+  isAnalyzing = false;
+}
+
+function analyze() { if (lastBlob) analyzeScout(lastBlob); }
+function showAIResult(t) {
+  $("aiR").style.display = "block";
+  $("aiR").style.background = `${MCOL[currentMode]}11`; $("aiR").style.border = `1px solid ${MCOL[currentMode]}33`;
+  $("aiR").textContent = t;
+}
+
+// ═══ MEMORY UI ═══════════════════════════════════════════════
+async function searchMemory(q) {
+  if (!q || q.length < 2) { memoryDB.renderList(memoryDB.entries.slice(-20).reverse()); return; }
+  const results = await memoryDB.search(q, 10);
+  memoryDB.renderList(results);
+}
+function clearMemory() { if (confirm("Delete all memories?")) memoryDB.clear(); }
+function exportMemory() { memoryDB.export(); }
+function toggleMemory(b) { memoryOn = !memoryOn; b.textContent = memoryOn ? "🧬 Memory ON" : "🧬 Memory OFF"; b.classList.toggle("active", memoryOn); }
+function toggleAutoLog(b) { autoLog = !autoLog; b.textContent = autoLog ? "📝 Auto-Log ON" : "📝 Auto-Log OFF"; b.classList.toggle("active", autoLog); }
+
+// ═══ TTS ════════════════════════════════════════════════════
+async function speakText(t) {
+  if (!t) return;
+  const mode = $("ttsV").value;
+  if (mode === "web") {
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = $("ttsL").value; u.rate = 1.1;
+    speechSynthesis.speak(u);
+  } else {
+    try {
+      const res = await fetch("https://api.openai.com/v1/audio/speech", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${$("apiKey").value}` },
+        body: JSON.stringify({ model: "tts-1", input: t.substring(0, 500), voice: "nova", speed: 1.1 })
+      });
+      const audio = new Audio(URL.createObjectURL(await res.blob()));
+      await audio.play();
+    } catch(e) { const u = new SpeechSynthesisUtterance(t); u.lang = $("ttsL").value; speechSynthesis.speak(u); }
+  }
+}
+function testTTS() { speakText("I am Hansi. Memory system active. I remember everything I see."); }
+
+// ═══ PHONE MIC ═══════════════════════════════════════════════
+let mediaRec = null, micActive = false;
+async function toggleMic() {
+  if (micActive) { mediaRec.stop(); micActive = false; $("bMic").classList.remove("recording"); $("bMic").textContent = "🎤 Phone Mic"; return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const chunks = [];
+    mediaRec = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+    mediaRec.ondataavailable = e => chunks.push(e.data);
+    mediaRec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      $("vSt").textContent = "Transcribing...";
+      try {
+        const fd = new FormData(); fd.append("file", blob, "rec.webm"); fd.append("model", "whisper-1"); fd.append("response_format", "text");
+        const res = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${$("apiKey").value}` }, body: fd });
+        const text = (await res.text()).trim();
+        log(`STT: "${text}"`, "success");
+        if (currentMode === 3) { $("chatIn").value = text; sendChat(); }
+        else if (currentMode === 2) babel.translateVoice(text);
+        else { showAIResult("🎤 " + text); await memoryDB.add(`[Voice] ${text}`, currentMode, { type: "voice" }); }
+      } catch(e) { log("STT: " + e.message, "error"); }
+      $("vSt").textContent = "Ready";
+    };
+    mediaRec.start(); micActive = true;
+    $("bMic").classList.add("recording"); $("bMic").textContent = "⏹️ Stop";
+    $("vSt").textContent = "Recording...";
+  } catch(e) { log("Mic: " + e.message, "error"); }
+}
+
+// ═══ BLE ════════════════════════════════════════════════════
+async function bleConnect() {
+  try {
+    device = await navigator.bluetooth.requestDevice({ filters: [{ name: "HansiGoggles" }], optionalServices: [SVC, HUD_SVC] });
+    device.addEventListener("gattserverdisconnected", () => { connected = false; updateUI(); });
+    server = await device.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    chars.cmd = await svc.getCharacteristic("19b10004-e8f2-537e-4f6c-d104768a1214");
+    const imgSz = await svc.getCharacteristic("19b10002-e8f2-537e-4f6c-d104768a1214");
+    const imgDt = await svc.getCharacteristic("19b10001-e8f2-537e-4f6c-d104768a1214");
+    await imgSz.startNotifications(); imgSz.addEventListener("characteristicvaluechanged", e => {
+      const dv = new DataView(e.target.value.buffer); expectedSize = dv.getUint32(0, true); imageBuffer = new Uint8Array(expectedSize); receivedChunks = 0;
+    });
+    await imgDt.startNotifications(); imgDt.addEventListener("characteristicvaluechanged", e => {
+      const d = new Uint8Array(e.target.value.buffer); const id = (d[0]<<8)|d[1]; const p = d.slice(2); const o = id*507;
+      if (o+p.length<=imageBuffer.length) imageBuffer.set(p, o); receivedChunks++;
+      if (receivedChunks>=Math.ceil(expectedSize/507)&&expectedSize>0) { showImage(new Blob([imageBuffer],{type:"image/jpeg"})); expectedSize=0; }
+    });
+    try { const hsvc = await server.getPrimaryService(HUD_SVC); hudChars.text = await hsvc.getCharacteristic("19b20001-e8f2-537e-4f6c-d104768a1214"); } catch(e) {}
+    connected = true; updateUI(); log("Connected!", "success");
+  } catch(e) { log("BLE: " + e.message, "error"); }
+}
+
+async function relayHUD(t) { if (hudChars.text) try { await hudChars.text.writeValue(new TextEncoder().encode(t.substring(0, 200))); } catch(e) {} }
+
+// ═══ CONTROLS ═══════════════════════════════════════════════
+async function setMode(m) {
+  currentMode = m; if (connected && chars.cmd) await chars.cmd.writeValue(new Uint8Array([m]));
+  updateUI(); log("Mode: " + MODES[m]);
+  // Auto-switch tabs
+  if (m === 2) showTab("babel"); else if (m === 3) showTab("titan"); else showTab("live");
+}
+function setBSrc(l, b) { bSrc = l; b.parentElement.querySelectorAll("button").forEach(x => x.classList.remove("active")); b.classList.add("active"); }
+function setBTgt(l, b) { bTgt = l; b.parentElement.querySelectorAll("button").forEach(x => x.classList.remove("active")); b.classList.add("active"); }
+function setProv(p, b) { provider = p; b.parentElement.querySelectorAll("button").forEach(x => x.classList.remove("active")); b.classList.add("active"); }
+function toggleAuto() { autoAnalyze = !autoAnalyze; $("bAu").textContent = autoAnalyze ? "🟢 Auto" : "⚪ Manual"; $("bAu").classList.toggle("active", autoAnalyze); }
+function translateManual() { babel.translateText($("babelInput").value); }
+
+function showTab(id, btn) {
+  ["live","babel","titan","memory","config"].forEach(t => { const el = $("tab-" + t); if (el) el.hidden = t !== id; });
+  $("tabs").querySelectorAll("button").forEach(b => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  else $("tabs").querySelectorAll("button").forEach(b => { if (b.textContent.toLowerCase().includes(id.substring(0,3))) b.classList.add("active"); });
+}
+
+function updateUI() {
+  $("dot").style.background = (connected||demoMode) ? "#06d6a0" : "#e94560";
+  $("cL").textContent = connected ? "Connected" : demoMode ? "Demo" : "Disconnected";
+  $("sR").hidden = !(connected || demoMode);
+}
+
+// ═══ DEMO ═══════════════════════════════════════════════════
+let demoInt, demoStr;
+async function toggleDemo() {
+  if (demoMode) { clearInterval(demoInt); demoStr?.getTracks().forEach(t=>t.stop()); demoMode=false; updateUI(); return; }
+  try {
+    demoStr=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:640,height:480}});
+    const v=document.createElement("video");v.srcObject=demoStr;await v.play();demoMode=true;updateUI();
+    const cap=()=>{const c=document.createElement("canvas");c.width=640;c.height=480;c.getContext("2d").drawImage(v,0,0);c.toBlob(b=>{if(b)showImage(b)},"image/jpeg",0.7)};
+    cap();demoInt=setInterval(cap,5000);
+  }catch(e){log("Cam: "+e.message,"error")}
+}
+
+function blobToB64(b){return new Promise((r,j)=>{const f=new FileReader();f.onload=()=>r(f.result.split(",")[1]);f.onerror=j;f.readAsDataURL(b)})}
+
+// ═══ INIT ═══════════════════════════════════════════════════
+memoryDB.init();
+speechSynthesis.onvoiceschanged=()=>{};
+</script>
+</body>
+</html>

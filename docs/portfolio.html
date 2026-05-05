@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HANSI ZOË AI GOGGLES — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Source+Code+Pro:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060b;--card:#0c0c14;--border:#1a1a2e;--accent:#e94560;--scout:#00b4d8;--babel:#06d6a0;--titan:#ffd166;--survey:#ef476f;--combat:#9b5de5;--text:#c8c8d0;--dim:#555;--glow:0 0 20px rgba(233,69,96,0.3)}
+body{background:var(--bg);color:var(--text);font-family:'Source Code Pro',monospace;overflow-x:hidden}
+::selection{background:var(--accent);color:#fff}
+
+/* ─── HERO ─── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 30% 40%,rgba(233,69,96,0.06) 0%,transparent 60%),radial-gradient(ellipse at 70% 60%,rgba(83,52,131,0.05) 0%,transparent 50%)}
+.hero-grid{position:absolute;top:0;left:0;right:0;bottom:0;background-image:linear-gradient(rgba(233,69,96,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(233,69,96,0.03) 1px,transparent 1px);background-size:40px 40px;animation:gridScroll 20s linear infinite}
+@keyframes gridScroll{to{background-position:40px 40px}}
+.hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(2.5rem,7vw,5rem);font-weight:900;text-align:center;letter-spacing:0.08em;color:#fff;text-shadow:var(--glow);position:relative;z-index:1;line-height:1.1}
+.hero-title span{display:block;font-size:0.35em;font-weight:400;color:var(--accent);letter-spacing:0.3em;margin-top:8px;font-family:'Source Code Pro',monospace}
+.hero-sub{font-size:clamp(0.7rem,1.5vw,0.95rem);color:var(--dim);text-align:center;margin-top:24px;max-width:550px;line-height:1.7;position:relative;z-index:1}
+.hero-tags{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:28px;position:relative;z-index:1}
+.tag{padding:4px 12px;border:1px solid var(--border);border-radius:20px;font-size:0.65rem;color:var(--dim);transition:all .3s}
+.tag:hover{border-color:var(--accent);color:var(--accent);box-shadow:var(--glow)}
+.scroll-cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);font-size:0.65rem;color:var(--dim);animation:bob 2s ease-in-out infinite;z-index:1}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+
+/* ─── SECTIONS ─── */
+section{padding:80px 20px;max-width:960px;margin:0 auto}
+.section-title{font-family:'Orbitron',sans-serif;font-size:1.6rem;font-weight:700;color:#fff;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.section-title .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:var(--glow)}
+.section-sub{color:var(--dim);font-size:0.75rem;margin-bottom:40px}
+
+/* ─── ARCHITECTURE ─── */
+.arch{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px}
+@media(max-width:640px){.arch{grid-template-columns:1fr}}
+.arch-col{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:transform .3s,border-color .3s}
+.arch-col:hover{transform:translateY(-4px);border-color:var(--accent)}
+.arch-head{padding:12px 16px;font-family:'Orbitron',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;color:#fff}
+.arch-body{padding:12px 16px;font-size:0.7rem;line-height:1.8}
+.arch-body li{list-style:none;padding:2px 0;color:var(--text)}
+.arch-body li::before{content:'›';margin-right:6px;color:var(--accent)}
+
+/* ─── MODES ─── */
+.modes{display:flex;flex-direction:column;gap:10px}
+.mode-row{display:flex;align-items:stretch;gap:0;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--border);transition:border-color .3s}
+.mode-row:hover{border-color:var(--accent)}
+.mode-bar{width:4px;flex-shrink:0}
+.mode-info{padding:12px 16px;flex:1}
+.mode-name{font-family:'Orbitron',sans-serif;font-size:0.8rem;font-weight:700;margin-bottom:4px}
+.mode-desc{font-size:0.7rem;color:var(--dim);line-height:1.6}
+
+/* ─── STATS ─── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:40px 0}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;text-align:center;transition:transform .3s}
+.stat-card:hover{transform:scale(1.05)}
+.stat-val{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--combat));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:0.65rem;color:var(--dim);margin-top:6px;text-transform:uppercase;letter-spacing:0.1em}
+
+/* ─── PIPELINE ─── */
+.pipeline{display:flex;gap:4px;overflow-x:auto;padding:10px 0}
+.pipe-step{flex:0 0 auto;width:120px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;position:relative}
+.pipe-step::after{content:'→';position:absolute;right:-10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:0.8rem}
+.pipe-step:last-child::after{display:none}
+.pipe-icon{font-size:1.2rem;margin-bottom:6px}
+.pipe-label{font-family:'Orbitron',sans-serif;font-size:0.6rem;font-weight:700;color:#fff;margin-bottom:4px}
+.pipe-desc{font-size:0.55rem;color:var(--dim);line-height:1.4}
+
+/* ─── TECH ─── */
+.tech-grid{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0}
+.tech-tag{padding:5px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:0.65rem;color:var(--text);transition:all .2s}
+.tech-tag:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ─── BOM ─── */
+.bom-table{width:100%;border-collapse:collapse;font-size:0.7rem;margin:20px 0}
+.bom-table th{text-align:left;padding:8px 12px;border-bottom:2px solid var(--accent);color:var(--accent);font-family:'Orbitron',sans-serif;font-size:0.6rem;letter-spacing:0.1em}
+.bom-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.bom-table tr:hover{background:rgba(233,69,96,0.04)}
+.bom-total{font-weight:700;color:var(--babel)}
+
+/* ─── FOOTER ─── */
+.footer{text-align:center;padding:60px 20px;border-top:1px solid var(--border)}
+.footer-quote{font-style:italic;color:var(--titan);font-size:0.85rem;margin-bottom:16px}
+.footer-links{display:flex;justify-content:center;gap:24px;margin-bottom:20px}
+.footer-links a{color:var(--dim);text-decoration:none;font-size:0.7rem;transition:color .2s}
+.footer-links a:hover{color:var(--accent)}
+.footer-copy{font-size:0.6rem;color:#222}
+
+/* ─── ANIMATIONS ─── */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity 0.6s ease,transform 0.6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <h1 class="hero-title">
+    HANSI ZOE
+    <span>AI GOGGLES</span>
+  </h1>
+  <p class="hero-sub">
+    Open-source DIY smart goggles combining ESP32-S3, GPT-4o Vision,
+    real-time translation, voice AI, and a prism HUD display —
+    all for under 150 EUR. Inspired by Hange Zoe from Attack on Titan.
+  </p>
+  <div class="hero-tags">
+    <span class="tag">ESP32-S3</span>
+    <span class="tag">GPT-4o Vision</span>
+    <span class="tag">BLE 5.0</span>
+    <span class="tag">LVGL</span>
+    <span class="tag">Whisper STT</span>
+    <span class="tag">RAG Memory</span>
+    <span class="tag">AMOLED HUD</span>
+    <span class="tag">OpenSCAD</span>
+  </div>
+  <div class="scroll-cue">↓ scroll to explore</div>
+</div>
+
+<!-- ARCHITECTURE -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>System Architecture</div>
+    <p class="section-sub">Three-device BLE mesh: embedded camera unit, smartphone AI hub, and prism HUD display.</p>
+  </div>
+  <div class="arch reveal">
+    <div class="arch-col">
+      <div class="arch-head" style="background:var(--accent)">GOGGLES UNIT</div>
+      <div class="arch-body">
+        <li>XIAO ESP32-S3 Sense @ 240MHz</li>
+        <li>OV2640 Camera (VGA JPEG)</li>
+        <li>PDM Microphone 16kHz</li>
+        <li>Voice Activity Detection</li>
+        <li>NimBLE GATT Server</li>
+        <li>HUD Relay Service</li>
+        <li>Deep Sleep: 14μA</li>
+      </div>
+    </div>
+    <div class="arch-col">
+      <div class="arch-head" style="background:var(--scout)">COMPANION APP</div>
+      <div class="arch-body">
+        <li>Web Bluetooth API</li>
+        <li>Whisper STT Pipeline</li>
+        <li>Multi-provider AI Router</li>
+        <li>Browser + OpenAI TTS</li>
+        <li>RAG Memory (256d vectors)</li>
+        <li>Babel Translation Engine</li>
+        <li>HUD Preview + Relay</li>
+      </div>
+    </div>
+    <div class="arch-col">
+      <div class="arch-head" style="background:var(--babel)">AI CLOUD</div>
+      <div class="arch-body">
+        <li>GPT-4o Vision + Mini</li>
+        <li>Claude Sonnet 4</li>
+        <li>Groq Llama 3.3 (free tier)</li>
+        <li>OpenAI Whisper</li>
+        <li>text-embedding-3-small</li>
+        <li>OpenAI TTS (Nova)</li>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Five AI Modes</div>
+    <p class="section-sub">Each mode transforms the goggles into a specialized AI tool.</p>
+  </div>
+  <div class="modes reveal">
+    <div class="mode-row"><div class="mode-bar" style="background:var(--scout)"></div><div class="mode-info"><div class="mode-name" style="color:var(--scout)">SCOUT</div><div class="mode-desc">Real-time object and text identification. OCR, technical component ID, scene analysis. GPT-4o Vision processes camera frames every 2 seconds.</div></div></div>
+    <div class="mode-row"><div class="mode-bar" style="background:var(--babel)"></div><div class="mode-info"><div class="mode-name" style="color:var(--babel)">BABEL</div><div class="mode-desc">Instant translation from 12+ languages. Image OCR, voice input, or manual text. Auto-detects source language. TTS reads the translation aloud.</div></div></div>
+    <div class="mode-row"><div class="mode-bar" style="background:var(--titan)"></div><div class="mode-info"><div class="mode-name" style="color:var(--titan)">TITAN</div><div class="mode-desc">Voice conversational AI with RAG memory. Recalls past observations via vector similarity search. Push-to-talk or hands-free VAD. "What did I see earlier?"</div></div></div>
+    <div class="mode-row"><div class="mode-bar" style="background:var(--survey)"></div><div class="mode-info"><div class="mode-name" style="color:var(--survey)">SURVEY</div><div class="mode-desc">Automatic life-logging camera. Captures and AI-describes surroundings every 10 seconds. Builds a searchable, timestamped memory archive.</div></div></div>
+    <div class="mode-row"><div class="mode-bar" style="background:var(--combat)"></div><div class="mode-info"><div class="mode-name" style="color:var(--combat)">COMBAT</div><div class="mode-desc">Navigation mode with GPS waypoints and landmark detection. HUD displays directional cues and distance overlays. (Experimental)</div></div></div>
+  </div>
+</section>
+
+<!-- VOICE PIPELINE -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Voice Pipeline</div>
+    <p class="section-sub">End-to-end speech processing in 2-4 seconds.</p>
+  </div>
+  <div class="pipeline reveal">
+    <div class="pipe-step"><div class="pipe-icon">🎤</div><div class="pipe-label">MIC</div><div class="pipe-desc">PDM 16kHz on ESP32-S3</div></div>
+    <div class="pipe-step"><div class="pipe-icon">📊</div><div class="pipe-label">VAD</div><div class="pipe-desc">Energy-based speech detection</div></div>
+    <div class="pipe-step"><div class="pipe-icon">📡</div><div class="pipe-label">BLE</div><div class="pipe-desc">WAV chunks to phone</div></div>
+    <div class="pipe-step"><div class="pipe-icon">🗣️</div><div class="pipe-label">STT</div><div class="pipe-desc">Whisper API transcription</div></div>
+    <div class="pipe-step"><div class="pipe-icon">🧠</div><div class="pipe-label">LLM</div><div class="pipe-desc">GPT-4o / Claude + RAG</div></div>
+    <div class="pipe-step"><div class="pipe-icon">🔊</div><div class="pipe-label">TTS</div><div class="pipe-desc">Browser or OpenAI Nova</div></div>
+    <div class="pipe-step"><div class="pipe-icon">👓</div><div class="pipe-label">HUD</div><div class="pipe-desc">AMOLED prism display</div></div>
+  </div>
+</section>
+
+<!-- KEY METRICS -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Key Metrics</div>
+  </div>
+  <div class="stats reveal">
+    <div class="stat-card"><div class="stat-val">~150€</div><div class="stat-label">Total Build Cost</div></div>
+    <div class="stat-card"><div class="stat-val">2-4s</div><div class="stat-label">AI Response Time</div></div>
+    <div class="stat-card"><div class="stat-val">3-4h</div><div class="stat-label">Battery Life</div></div>
+    <div class="stat-card"><div class="stat-val">12+</div><div class="stat-label">Languages</div></div>
+    <div class="stat-card"><div class="stat-val">232g</div><div class="stat-label">Total Weight</div></div>
+    <div class="stat-card"><div class="stat-val">5</div><div class="stat-label">AI Modes</div></div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Tech Stack</div>
+    <p class="section-sub">Full-stack embedded + web + cloud AI.</p>
+  </div>
+  <div class="reveal">
+    <div style="font-size:0.7rem;color:var(--accent);margin-bottom:8px;font-family:'Orbitron',sans-serif;font-weight:700">FIRMWARE</div>
+    <div class="tech-grid">
+      <span class="tech-tag">C/C++</span><span class="tech-tag">Arduino ESP-IDF</span><span class="tech-tag">NimBLE</span><span class="tech-tag">LVGL v8.4</span><span class="tech-tag">FreeRTOS</span><span class="tech-tag">I2S PDM</span><span class="tech-tag">ESP-Camera</span><span class="tech-tag">Deep Sleep</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--scout);margin:16px 0 8px;font-family:'Orbitron',sans-serif;font-weight:700">WEB APP</div>
+    <div class="tech-grid">
+      <span class="tech-tag">Web Bluetooth</span><span class="tech-tag">Web Audio API</span><span class="tech-tag">Web Speech API</span><span class="tech-tag">Canvas</span><span class="tech-tag">IndexedDB</span><span class="tech-tag">Cosine Similarity</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--babel);margin:16px 0 8px;font-family:'Orbitron',sans-serif;font-weight:700">AI / ML</div>
+    <div class="tech-grid">
+      <span class="tech-tag">GPT-4o Vision</span><span class="tech-tag">Claude Sonnet</span><span class="tech-tag">Groq Llama</span><span class="tech-tag">Whisper STT</span><span class="tech-tag">OpenAI Embeddings</span><span class="tech-tag">TTS</span>
+    </div>
+    <div style="font-size:0.7rem;color:var(--titan);margin:16px 0 8px;font-family:'Orbitron',sans-serif;font-weight:700">HARDWARE / CAD</div>
+    <div class="tech-grid">
+      <span class="tech-tag">ESP32-S3</span><span class="tech-tag">OV2640</span><span class="tech-tag">LILYGO T-Glass V2</span><span class="tech-tag">BLE 5.0</span><span class="tech-tag">OpenSCAD</span><span class="tech-tag">PlatformIO</span><span class="tech-tag">3D Printing (PETG)</span>
+    </div>
+  </div>
+</section>
+
+<!-- BOM -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Hardware BOM</div>
+  </div>
+  <table class="bom-table reveal">
+    <thead><tr><th>Component</th><th>Model</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Base Frame</td><td>German Metal Welding Goggles (50mm, clear)</td><td>15 €</td></tr>
+      <tr><td>Compute</td><td>Seeed XIAO ESP32-S3 Sense</td><td>14 €</td></tr>
+      <tr><td>HUD Display</td><td>LILYGO T-Glass V2 (AMOLED 126×126 + Prism)</td><td>48 €</td></tr>
+      <tr><td>Battery</td><td>LiPo 3.7V 1000mAh</td><td>5 €</td></tr>
+      <tr><td>Charging</td><td>TP4056 USB-C Module</td><td>1 €</td></tr>
+      <tr><td>LED Accents</td><td>WS2812B Strip (3 LEDs) + Amber Gel</td><td>3 €</td></tr>
+      <tr><td>3D Mounts</td><td>PETG Filament (~40g, FabLab print)</td><td>3 €</td></tr>
+      <tr><td>Wiring</td><td>Silicone wire, JST connectors, M3 bolts</td><td>6 €</td></tr>
+      <tr><td>Aesthetic</td><td>Leather strap, brass rivets, matte paint</td><td>11 €</td></tr>
+      <tr><td class="bom-total" colspan="2">TOTAL</td><td class="bom-total">~106 €</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- PROJECT STRUCTURE -->
+<section>
+  <div class="reveal">
+    <div class="section-title"><span class="dot"></span>Repository Structure</div>
+  </div>
+  <div class="reveal" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;font-size:0.7rem;line-height:2;color:var(--dim)">
+<pre style="color:var(--text)"><span style="color:var(--accent)">hansi-ai-goggles/</span>
+├── <span style="color:var(--scout)">firmware/</span>
+│   ├── goggles/hansi_goggles_v3.ino    <span style="color:var(--dim)"># Camera + VAD + BLE server</span>
+│   ├── hud/hansi_hud_v2.ino            <span style="color:var(--dim)"># T-Glass LVGL display</span>
+│   └── platformio.ini                  <span style="color:var(--dim)"># Unified build config</span>
+├── <span style="color:var(--babel)">companion/</span>
+│   └── hansi_companion_v4.html         <span style="color:var(--dim)"># Web app (Babel + RAG + Voice)</span>
+├── <span style="color:var(--titan)">hardware/</span>
+│   ├── hansi_mount_v2.scad             <span style="color:var(--dim)"># OpenSCAD 3D mount (5 parts)</span>
+│   └── assembly_guide_v2.md            <span style="color:var(--dim)"># Full build instructions</span>
+├── <span style="color:var(--survey)">docs/</span>
+│   ├── portfolio.html                  <span style="color:var(--dim)"># This page</span>
+│   └── Hansi_AI_Goggles_Showcase.pptx  <span style="color:var(--dim)"># 10-slide presentation</span>
+└── README.md</pre>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <p class="footer-quote">"If you don't try, you'll never know." — Hange Zoë</p>
+  <div class="footer-links">
+    <a href="https://github.com/e49nana/hansi-ai-goggles">GitHub</a>
+    <a href="https://www.mql5.com/en/users/robin2.0">MQL5 Profile</a>
+  </div>
+  <p class="footer-copy">Built by Sola — TH Nürnberg B-AMP — AlgoSphere Quant — ExMachina Labs — 2026</p>
+</div>
+
+<script>
+const obs = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
