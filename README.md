@@ -97,6 +97,6 @@ MIT — Build your own, modify freely, share with others.
 
 ---
 
-*Built by Sola — TH Nurnberg B-AMP — AlgoSphere Quant — ExMachina Labs — 2026*
+*Built by Sola — TH Nurnberg B-AMP — AlgoSphere Quant — 2026*
 
 *"If you don't try, you'll never know." — Hange Zoe*
